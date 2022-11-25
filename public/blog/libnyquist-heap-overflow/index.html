@@ -1,0 +1,80 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta content="width=device-width,initial-scale=1.0" name=viewport><meta content="light dark" name=color-scheme><title>libnyquist: heap overflow in Vorbis decoder</title><meta name=description><link href=/img/favicon-32x32.png rel=icon sizes=32x32 type=image/png><link href=/img/favicon-16x16.png rel=icon sizes=16x16 type=image/png><link href=/img/apple-touch-icon.png rel=apple-touch-icon sizes=180x180><link href=https://fonts.googleapis.com rel=preconnect><link href=https://fonts.gstatic.com rel=preconnect><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Jost&display=swap" rel=stylesheet><link href=https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css rel=stylesheet><link href=/css/var.css rel=stylesheet><link href=/css/base.css rel=stylesheet><link href=/css/header.css rel=stylesheet><link href=/css/footer.css rel=stylesheet><link href=/css/post.css rel=stylesheet><body><script>if(localStorage.getItem('theme')=='dark'){document.body.classList.add('dark-mode');}</script><header class=blur><div class=top><a class="header blog" href=/blog><i class="ri-quill-pen-line ri-2x"></i><span>Security and stuff</span></a><div class=icon><a aria-label=home href=/ id=go-home><i class="ri-user-6-line ri-xl"></i></a><a aria-label="rss feed" href=/blog/feed.xml><i class="ri-rss-line ri-xl"></i></a><button aria-label="dark light mode switch" id=color-toggle><i class="ri-moon-line ri-xl"></i></button><button aria-label="table of content" id=toc-toggle><i class="ri-menu-2-line ri-xl"></i></button></div></div><div id=progress-bar></div></header><div class=wrap><div class=blank></div><main><div id=top></div><article><h1>libnyquist: heap overflow in Vorbis decoder</h1><div id=post-info><div class=date><span id=publish>2019-07-30</span></div><div class=tags><a class=tag href=https://ekse.oops.wtf/tags/libnyquist><i class="ri-hashtag ri-sm"></i><span>libnyquist</span></a><a class=tag href=https://ekse.oops.wtf/tags/fuzzing><i class="ri-hashtag ri-sm"></i><span>fuzzing</span></a></div></div><h2 id=summary>Summary</h2><p><a rel="nofollow noreferrer" href=https://github.com/ddiakopoulos/libnyquist>libnyquist</a> is a cross platform C++11 library for decoding audio (mp3, wav, ogg, opus, flac, etc). A heap overflow can happen in VorbisDecoderInternal::readInternal when the library attempts to read more frames than the allocated capacity of <code>AudioData->samples</code>.<p>github issue: <a rel="nofollow noreferrer" href=https://github.com/ddiakopoulos/libnyquist/issues/40>https://github.com/ddiakopoulos/libnyquist/issues/40</a> crash input: <a href="https://drive.google.com/open?id=10xpTDUrHzJLFknsY4bF8333YpvnMHZJc" rel="nofollow noreferrer">crash-7f190cd04b5fbf6f813db4447b5010e63867fe6a.ogg</a><p>For reference, the fuzzer can be found on my <a rel="nofollow noreferrer" href=https://github.com/ekse/libnyquist/tree/fuzzing>fuzzing</a> branch. The provided sample also crashes the sample <code>libnyquist-examples</code> that is provided with libnyquist.<h2 id=detailed-analysis>Detailed analysis</h2><p>libnyquist can write past the capacity of <code>samples</code> in AudioData. With the provided crash sample, this happens when <code>totalFramesRead</code> reaches the value 19840.<p><code>VorbisDecoderInternal::readInternal</code> contains the following code. The write overflow happens in <code>d->samples[totalFramesRead] = buffer[ch][i]</code>.<pre class=language-c data-lang=c style=background-color:#2e3440;color:#d8dee9;><code class=language-c data-lang=c><span style=color:#81a1c1;>for </span><span>(</span><span style=color:#81a1c1;>int</span><span> i </span><span style=color:#81a1c1;>= </span><span style=color:#b48ead;>0</span><span style=color:#eceff4;>;</span><span> i </span><span style=color:#81a1c1;><</span><span> framesRead</span><span style=color:#eceff4;>; </span><span style=color:#81a1c1;>++</span><span>i)
+</span><span>{
+</span><span>    </span><span style=color:#81a1c1;>for</span><span>(</span><span style=color:#81a1c1;>int</span><span> ch </span><span style=color:#81a1c1;>= </span><span style=color:#b48ead;>0</span><span style=color:#eceff4;>;</span><span> ch </span><span style=color:#81a1c1;><</span><span> d</span><span style=color:#81a1c1;>-></span><span>channelCount</span><span style=color:#eceff4;>;</span><span> ch</span><span style=color:#81a1c1;>++</span><span>)
+</span><span>    {
+</span><span>        d</span><span style=color:#81a1c1;>-></span><span>samples[totalFramesRead] </span><span style=color:#81a1c1;>=</span><span> buffer[ch][i]</span><span style=color:#eceff4;>;
+</span><span>        totalFramesRead</span><span style=color:#81a1c1;>++</span><span style=color:#eceff4;>;
+</span><span>    }
+</span><span>}
+</span></code></pre><p>The size of samples is set in VorbisDecoderInternal::loadAudioData.<pre class=language-c data-lang=c style=background-color:#2e3440;color:#d8dee9;><code class=language-c data-lang=c><span style=color:#81a1c1;>auto</span><span> totalSamples </span><span style=color:#81a1c1;>= </span><span style=color:#8fbcbb;>size_t</span><span>(</span><span style=color:#88c0d0;>getTotalSamples</span><span>())</span><span style=color:#eceff4;>;
+</span><span>d</span><span style=color:#81a1c1;>-></span><span>samples</span><span style=color:#81a1c1;>.</span><span style=color:#88c0d0;>resize</span><span>(totalSamples </span><span style=color:#81a1c1;>*</span><span> d</span><span style=color:#81a1c1;>-></span><span>channelCount)</span><span style=color:#eceff4;>;
+</span></code></pre><p><code>getTotalSamples</code> is defined as follows.<pre class=language-c data-lang=c style=background-color:#2e3440;color:#d8dee9;><code class=language-c data-lang=c><span style=color:#81a1c1;>inline </span><span style=color:#8fbcbb;>int64_t </span><span style=color:#88c0d0;>getTotalSamples</span><span>() </span><span style=color:#81a1c1;>const </span><span>{ </span><span style=color:#81a1c1;>return </span><span style=color:#8fbcbb;>int64_t</span><span>(</span><span style=color:#88c0d0;>ov_pcm_total</span><span>(const_cast</span><span style=color:#81a1c1;><</span><span>OggVorbis_File </span><span style=color:#81a1c1;>*></span><span>(fileHandle)</span><span style=color:#eceff4;>, </span><span style=color:#81a1c1;>-</span><span style=color:#b48ead;>1</span><span>))</span><span style=color:#eceff4;>; </span><span>}
+</span></code></pre><p>In the crash sample, <code>totalSamples</code> is 9920, d->channelCount is 2, so samples is set to size 19840.<p>AddressSanitizer report:<pre style=background-color:#2e3440;color:#d8dee9;><code><span>==12481==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x631000027e00 at pc 0x000000822064 bp 0x7ffcb604acd0 sp 0x7ffcb604acc8
+</span><span>WRITE of size 4 at 0x631000027e00 thread T0
+</span><span>    #0 0x822063 in VorbisDecoderInternal::readInternal(unsigned long, unsigned long) /home/ekse/git/libnyquist/builds/Fuzzing/../../src/VorbisDecoder.cpp:105:49
+</span><span>    #1 0x820788 in VorbisDecoderInternal::loadAudioData(void*, ov_callbacks) /home/ekse/git/libnyquist/builds/Fuzzing/../../src/VorbisDecoder.cpp:248:14
+</span><span>    #2 0x81ef9a in VorbisDecoderInternal::VorbisDecoderInternal(nqr::AudioData*, std::vector&LTunsigned char, std::allocator&LTunsigned char> > const&) /home/ekse/git/libnyquist/builds/Fuzzing/../../src/VorbisDecoder.cpp:56:13
+</span><span>    #3 0x81ea87 in nqr::VorbisDecoder::LoadFromBuffer(nqr::AudioData*, std::vector&LTunsigned char, std::allocator&LTunsigned char> > const&) /home/ekse/git/libnyquist/builds/Fuzzing/../../src/VorbisDecoder.cpp:264:27
+</span><span>    #4 0x5347bc in nqr::NyquistIO::Load(nqr::AudioData*, std::__cxx11::basic_string&LTchar, std::char_traits&LTchar>, std::allocator&LTchar> > const&, std::vector&LTunsigned char, std::allocator&LTunsigned char> > const&) /home/ekse/git/libnyquist/builds/Fuzzing/../../src/Common.cpp:133:22
+</span><span>    #5 0x52a6b3 in Fuzz_Decoder(unsigned char const*, unsigned long) /home/ekse/git/libnyquist/builds/Fuzzing/../../fuzzers/FuzzNyquist.cpp:20:12
+</span><span>    #6 0x52ad5b in LLVMFuzzerTestOneInput /home/ekse/git/libnyquist/builds/Fuzzing/../../fuzzers/FuzzNyquist.cpp:28:5
+</span><span>    #7 0x43231a in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long) (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x43231a)
+</span><span>    #8 0x424c5c in fuzzer::RunOneTest(fuzzer::Fuzzer*, char const*, unsigned long) (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x424c5c)
+</span><span>    #9 0x42a0e1 in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long)) (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x42a0e1)
+</span><span>    #10 0x44c702 in main (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x44c702)
+</span><span>    #11 0x7fadf79f1b6a in __libc_start_main /build/glibc-KRRWSm/glibc-2.29/csu/../csu/libc-start.c:308:16
+</span><span>    #12 0x423539 in _start (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x423539)
+</span><span>0x631000027e00 is located 0 bytes to the right of 79360-byte region [0x631000014800,0x631000027e00)
+</span><span>allocated by thread T0 here:
+</span><span>    #0 0x527512 in operator new(unsigned long) (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x527512)
+</span><span>    #1 0x56ae67 in __gnu_cxx::new_allocator&LTfloat>::allocate(unsigned long, void const*) /usr/bin/../lib/gcc/x86_64-linux-gnu/8/../../../../include/c++/8/ext/new_allocator.h:111:27
+</span><span>    #2 0x56ad6c in std::allocator_traits&LTstd::allocator&LTfloat> >::allocate(std::allocator&LTfloat>&, unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/8/../../../../include/c++/8/bits/alloc_traits.h:436:20
+</span><span>    #3 0x56a409 in std::_Vector_base&LTfloat, std::allocator&LTfloat> >::_M_allocate(unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/8/../../../../include/c++/8/bits/stl_vector.h:296:20
+</span><span>    #4 0x5696b5 in std::vector&LTfloat, std::allocator&LTfloat> >::_M_default_append(unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/8/../../../../include/c++/8/bits/vector.tcc:604:34
+</span><span>    #5 0x566e8c in std::vector&LTfloat, std::allocator&LTfloat> >::resize(unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/8/../../../../include/c++/8/bits/stl_vector.h:827:4
+</span><span>    #6 0x82076f in VorbisDecoderInternal::loadAudioData(void*, ov_callbacks) /home/ekse/git/libnyquist/builds/Fuzzing/../../src/VorbisDecoder.cpp:246:20
+</span><span>    #7 0x81ef9a in VorbisDecoderInternal::VorbisDecoderInternal(nqr::AudioData*, std::vector&LTunsigned char, std::allocator&LTunsigned char> > const&) /home/ekse/git/libnyquist/builds/Fuzzing/../../src/VorbisDecoder.cpp:56:13
+</span><span>    #8 0x81ea87 in nqr::VorbisDecoder::LoadFromBuffer(nqr::AudioData*, std::vector&LTunsigned char, std::allocator&LTunsigned char> > const&) /home/ekse/git/libnyquist/builds/Fuzzing/../../src/VorbisDecoder.cpp:264:27
+</span><span>    #9 0x5347bc in nqr::NyquistIO::Load(nqr::AudioData*, std::__cxx11::basic_string&LTchar, std::char_traits&LTchar>, std::allocator&LTchar> > const&, std::vector&LTunsigned char, std::allocator&LTunsigned char> > const&) /home/ekse/git/libnyquist/builds/Fuzzing/../../src/Common.cpp:133:22
+</span><span>    #10 0x52a6b3 in Fuzz_Decoder(unsigned char const*, unsigned long) /home/ekse/git/libnyquist/builds/Fuzzing/../../fuzzers/FuzzNyquist.cpp:20:12
+</span><span>    #11 0x52ad5b in LLVMFuzzerTestOneInput /home/ekse/git/libnyquist/builds/Fuzzing/../../fuzzers/FuzzNyquist.cpp:28:5
+</span><span>    #12 0x43231a in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long) (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x43231a)
+</span><span>    #13 0x424c5c in fuzzer::RunOneTest(fuzzer::Fuzzer*, char const*, unsigned long) (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x424c5c)
+</span><span>    #14 0x42a0e1 in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long)) (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x42a0e1)
+</span><span>    #15 0x44c702 in main (/home/ekse/git/libnyquist/builds/Fuzzing/fuzzers/FuzzNyquist+0x44c702)
+</span><span>    #16 0x7fadf79f1b6a in __libc_start_main /build/glibc-KRRWSm/glibc-2.29/csu/../csu/libc-start.c:308:16
+</span><span>SUMMARY: AddressSanitizer: heap-buffer-overflow /home/ekse/git/libnyquist/builds/Fuzzing/../../src/VorbisDecoder.cpp:105:49 in VorbisDecoderInternal::readInternal(unsigned long, unsigned long)
+</span><span>Shadow bytes around the buggy address:
+</span><span>  0x0c627fffcf70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+</span><span>  0x0c627fffcf80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+</span><span>  0x0c627fffcf90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+</span><span>  0x0c627fffcfa0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+</span><span>  0x0c627fffcfb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+</span><span>=>0x0c627fffcfc0:[fa]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+</span><span>  0x0c627fffcfd0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+</span><span>  0x0c627fffcfe0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+</span><span>  0x0c627fffcff0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+</span><span>  0x0c627fffd000: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+</span><span>  0x0c627fffd010: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+</span><span>Shadow byte legend (one shadow byte represents 8 application bytes):
+</span><span>  Addressable:           00
+</span><span>  Partially addressable: 01 02 03 04 05 06 07
+</span><span>  Heap left redzone:       fa
+</span><span>  Freed heap region:       fd
+</span><span>  Stack left redzone:      f1
+</span><span>  Stack mid redzone:       f2
+</span><span>  Stack right redzone:     f3
+</span><span>  Stack after return:      f5
+</span><span>  Stack use after scope:   f8
+</span><span>  Global redzone:          f9
+</span><span>  Global init order:       f6
+</span><span>  Poisoned by user:        f7
+</span><span>  Container overflow:      fc
+</span><span>  Array cookie:            ac
+</span><span>  Intra object redzone:    bb
+</span><span>  ASan internal:           fe
+</span><span>  Left alloca redzone:     ca
+</span><span>  Right alloca redzone:    cb
+</span><span>  Shadow gap:              cc
+</span><span>==12481==ABORTING
+</span></code></pre></article></main><aside class=blur><nav><ul><li><a class=toc-h2 href=#summary>Summary</a><li><a class=toc-h2 href=#detailed-analysis>Detailed analysis</a></ul></nav><a aria-label="back to top" href=#top id=back-to-top><i class="ri-arrow-up-s-line ri-2x"></i></a></aside></div><footer><div class=copyright>Copyright © 2022 Sébastien Duquette. All rights reserved.</div><div class=credits><span>Powered by <a rel="noreferrer noopener" href=https://www.getzola.org/ target=_blank>Zola</a> and <a rel="noreferrer noopener" href=https://github.com/isunjn/serene target=_blank>Serene</a></span></div></footer><script src=/js/dark.js></script><script src=/js/toc.js></script><script src=/js/progress.js></script><script src=/js/lightense.min.js></script><script src=/js/img.js></script>

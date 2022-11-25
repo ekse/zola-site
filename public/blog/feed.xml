@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+	<title>Security and stuff</title>
+	<link href="https://ekse.oops.wtf/blog/feed.xml" rel="self" type="application/atom+xml"/>
+    <link href="https://ekse.oops.wtf/blog/"/>
+	<updated>2019-08-07T00:00:00+00:00</updated>
+	<id>https://ekse.oops.wtf/blog/feed.xml</id>
+	<entry xml:lang="en">
+		<title>Building libFuzzer fuzzers on Windows with cmake&#x2F;Visual Studio</title>
+		<published>2019-08-07T00:00:00+00:00</published>
+		<updated>2019-08-07T00:00:00+00:00</updated>
+		<link href="https://ekse.oops.wtf/blog/libfuzzer-visual-studio/" type="text/html"/>
+		<id>https://ekse.oops.wtf/blog/libfuzzer-visual-studio/</id>
+		<content type="html">&lt;p&gt;libFuzzer is awesome and is currently my go-to fuzzing tool, so I was super excited last week when I learned that both
+&lt;a rel=&quot;nofollow noreferrer&quot; href=&quot;https:&#x2F;&#x2F;llvm.org&#x2F;docs&#x2F;LibFuzzer.html&quot;&gt;libFuzzer&lt;&#x2F;a&gt; and &lt;a rel=&quot;nofollow noreferrer&quot; href=&quot;https:&#x2F;&#x2F;clang.llvm.org&#x2F;docs&#x2F;AddressSanitizer.html&quot;&gt;AddressSanitizer&lt;&#x2F;a&gt;
+are now supported on Windows! I put together a couple notes on how I got it to work with a cmake + Visual Studio project.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;configuration-steps&quot;&gt;Configuration steps&lt;&#x2F;h2&gt;
+&lt;p&gt;The first step is to install a snapshot of clang 9 which can be downloaded from &lt;a rel=&quot;nofollow noreferrer&quot; href=&quot;https:&#x2F;&#x2F;llvm.org&#x2F;builds&#x2F;&quot;&gt;https:&#x2F;&#x2F;llvm.org&#x2F;builds&#x2F;&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;We also need to install the clang support for Visual Studio. In Visual Studio Installer, it can be found under
+&amp;quot;Individual Components&amp;quot; as &amp;quot;C++ Clang-cl for v142 build tools&amp;quot;.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;project-generation&quot;&gt;Project generation&lt;&#x2F;h2&gt;
+&lt;p&gt;The next step is to generate the cmake build using the &lt;code&gt;ClangCl&lt;&#x2F;code&gt; toolset. Here &lt;code&gt;WASM_FUZZING&lt;&#x2F;code&gt; is a flag specific to
+&lt;code&gt;libwasm-vulnerable&lt;&#x2F;code&gt; that is used to build the fuzzers (see the project
+&lt;a rel=&quot;nofollow noreferrer&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;ekse&#x2F;libwasm-vulnerable&#x2F;blob&#x2F;master&#x2F;CMakeLists.txt#L18&quot;&gt;CMakeLists.txt&lt;&#x2F;a&gt; for details).&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2e3440;color:#d8dee9;&quot;&gt;&lt;code&gt;&lt;span&gt;cmake -G &amp;quot;Visual Studio 16&amp;quot; -T ClangCl -DWASM_FUZZING=ON ..&#x2F;..
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Next, open the &lt;code&gt;libwasm.sln&lt;&#x2F;code&gt; project in Visual Studio. A limitation of libFuzzer on Windows is that incremental builds
+are not supported. To avoid this issue, I build the project in &amp;quot;Release&amp;quot; mode.&lt;&#x2F;p&gt;
+&lt;p&gt;Another limitation of libFuzzer on Windows is that it only supports the &#x2F;MT runtime library (it will fail to compile
+with &#x2F;MD or &#x2F;MTd). We need to change it for both libwasm and FuzzLibwasm. To do that, right-click on the project,
+select &amp;quot;Properties&amp;quot;, then under &amp;quot;Configuration properties&amp;quot; &#x2F; &amp;quot;C&#x2F;C++&amp;quot; &#x2F; &amp;quot;Code generation&amp;quot;, set &amp;quot;Runtime library&amp;quot; to
+&amp;quot;Multithread &#x2F;MT&amp;quot;.&lt;&#x2F;p&gt;
+&lt;p&gt;The last thing we need to fix is adding the libFuzzer libraries as they are not automatically added. To do that, open
+the Properties page of FuzzLibwasm, go to &amp;quot;Linking&amp;quot; &#x2F; &amp;quot;Entries&amp;quot; and open &amp;quot;Additional Dependencies&amp;quot;. Add the following
+lines (the paths might be different on your system).&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2e3440;color:#d8dee9;&quot;&gt;&lt;code&gt;&lt;span&gt;C:\Program Files\LLVM\lib\clang\9.0.0\lib\windows\clang_rt.asan-preinit-x86_64.lib
+&lt;&#x2F;span&gt;&lt;span&gt;C:\Program Files\LLVM\lib\clang\9.0.0\lib\windows\clang_rt.asan-x86_64.lib
+&lt;&#x2F;span&gt;&lt;span&gt;C:\Program Files\LLVM\lib\clang\9.0.0\lib\windows\clang_rt.asan_cxx-x86_64.lib
+&lt;&#x2F;span&gt;&lt;span&gt;C:\Program Files\LLVM\lib\clang\9.0.0\lib\windows\clang_rt.fuzzer-x86_64.lib
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;FuzzLibwasm should now build and run normally (and should find a crash almost right away).&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2e3440;color:#d8dee9;&quot;&gt;&lt;code&gt;&lt;span&gt;C:\projects\Security\libwasm-vulnerable\builds\Fuzzing2&amp;gt;fuzzers\Release\FuzzLibwasm.exe
+&lt;&#x2F;span&gt;&lt;span&gt;INFO: Seed: 3746082236
+&lt;&#x2F;span&gt;&lt;span&gt;INFO: Loaded 1 modules   (331 inline 8-bit counters): 331 [00007FF72401B908, 00007FF72401BA53),
+&lt;&#x2F;span&gt;&lt;span&gt;INFO: Loaded 1 PC tables (331 PCs): 331 [00007FF723FF3EA8,00007FF723FF5358),
+&lt;&#x2F;span&gt;&lt;span&gt;INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+&lt;&#x2F;span&gt;&lt;span&gt;INFO: A corpus is not provided, starting from an empty corpus
+&lt;&#x2F;span&gt;&lt;span&gt;#2      INITED cov: 6 ft: 6 corp: 1&#x2F;1b exec&#x2F;s: 0 rss: 62Mb
+&lt;&#x2F;span&gt;&lt;span&gt;=================================================================
+&lt;&#x2F;span&gt;&lt;span&gt;==20928==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x11e35af80893 at pc 0x7ff723e68a02 bp 0x001618efee90 sp 0x001618efeed8
+&lt;&#x2F;span&gt;&lt;span&gt;READ of size 1 at 0x11e35af80893 thread T0
+&lt;&#x2F;span&gt;&lt;span&gt;    #0 0x7ff723e68a01 in WasmDisasm_NextInstruction+0x6d1 (C:\projects\Security\libwasm-vulnerable\builds\Fuzzing2\fuzzers\Release\FuzzLibwasm.exe+0x140008a01)
+&lt;&#x2F;span&gt;&lt;span&gt;    #1 0x7ff723e61115 in LLVMFuzzerTestOneInput+0x65 (C:\projects\Security\libwasm-vulnerable\builds\Fuzzing2\fuzzers\Release\FuzzLibwasm.exe+0x140001115)
+&lt;&#x2F;span&gt;&lt;span&gt;    #2 0x7ff723eb0edd in fuzzer::Fuzzer::ExecuteCallback C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerLoop.cpp:553
+&lt;&#x2F;span&gt;&lt;span&gt;    #3 0x7ff723eb0296 in fuzzer::Fuzzer::RunOne C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerLoop.cpp:469
+&lt;&#x2F;span&gt;&lt;span&gt;    #4 0x7ff723eb2030 in fuzzer::Fuzzer::MutateAndTestOne C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerLoop.cpp:695
+&lt;&#x2F;span&gt;&lt;span&gt;    #5 0x7ff723eb2df5 in fuzzer::Fuzzer::Loop C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerLoop.cpp:831
+&lt;&#x2F;span&gt;&lt;span&gt;    #6 0x7ff723ea725f in fuzzer::FuzzerDriver C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerDriver.cpp:825
+&lt;&#x2F;span&gt;&lt;span&gt;    #7 0x7ff723ef11d2 in main C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerMain.cpp:19
+&lt;&#x2F;span&gt;&lt;span&gt;    #8 0x7ff723f49b5b in __scrt_common_main_seh d:\agent\_work\3\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288
+&lt;&#x2F;span&gt;&lt;span&gt;    #9 0x7ffa07227973 in BaseThreadInitThunk+0x13 (C:\WINDOWS\System32\KERNEL32.dll+0x180017973)
+&lt;&#x2F;span&gt;&lt;span&gt;    #10 0x7ffa0913a270 in RtlUserThreadStart+0x20 (C:\WINDOWS\SYSTEM32\ntdll.dll+0x18006a270)
+&lt;&#x2F;span&gt;&lt;span&gt;0x11e35af80893 is located 0 bytes to the right of 3-byte region [0x11e35af80890,0x11e35af80893)
+&lt;&#x2F;span&gt;&lt;span&gt;allocated by thread T0 here:
+&lt;&#x2F;span&gt;&lt;span&gt;    #0 0x7ff723e96924 in operator new[] C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\asan\asan_new_delete.cc:102
+&lt;&#x2F;span&gt;&lt;span&gt;    #1 0x7ff723eb0df1 in fuzzer::Fuzzer::ExecuteCallback C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerLoop.cpp:538
+&lt;&#x2F;span&gt;&lt;span&gt;    #2 0x7ff723eb0296 in fuzzer::Fuzzer::RunOne C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerLoop.cpp:469
+&lt;&#x2F;span&gt;&lt;span&gt;    #3 0x7ff723eb2030 in fuzzer::Fuzzer::MutateAndTestOne C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerLoop.cpp:695
+&lt;&#x2F;span&gt;&lt;span&gt;    #4 0x7ff723eb2df5 in fuzzer::Fuzzer::Loop C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerLoop.cpp:831
+&lt;&#x2F;span&gt;&lt;span&gt;    #5 0x7ff723ea725f in fuzzer::FuzzerDriver C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerDriver.cpp:825
+&lt;&#x2F;span&gt;&lt;span&gt;    #6 0x7ff723ef11d2 in main C:\src\llvm_package_363781\llvm\projects\compiler-rt\lib\fuzzer\FuzzerMain.cpp:19
+&lt;&#x2F;span&gt;&lt;span&gt;    #7 0x7ff723f49b5b in __scrt_common_main_seh d:\agent\_work\3\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288
+&lt;&#x2F;span&gt;&lt;span&gt;    #8 0x7ffa07227973 in BaseThreadInitThunk+0x13 (C:\WINDOWS\System32\KERNEL32.dll+0x180017973)
+&lt;&#x2F;span&gt;&lt;span&gt;    #9 0x7ffa0913a270 in RtlUserThreadStart+0x20 (C:\WINDOWS\SYSTEM32\ntdll.dll+0x18006a270)
+&lt;&#x2F;span&gt;&lt;span&gt;SUMMARY: AddressSanitizer: heap-buffer-overflow (C:\projects\Security\libwasm-vulnerable\builds\Fuzzing2\fuzzers\Release\FuzzLibwasm.exe+0x140008a01) in WasmDisasm_NextInstruction+0x6d1
+&lt;&#x2F;span&gt;&lt;span&gt;Shadow bytes around the buggy address:
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc65700c0: fa fa 05 fa fa fa fd fa fa fa 06 fa fa fa 00 00
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc65700d0: fa fa 00 00 fa fa 00 fa fa fa 00 fa fa fa 00 fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc65700e0: fa fa 00 00 fa fa 00 fa fa fa 00 fa fa fa fd fd
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc65700f0: fa fa fd fd fa fa fd fd fa fa fd fa fa fa fd fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc6570100: fa fa fd fa fa fa fd fa fa fa fd fa fa fa fd fa
+&lt;&#x2F;span&gt;&lt;span&gt;=&amp;gt;0x041bc6570110: fa fa[03]fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc6570120: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc6570130: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc6570140: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc6570150: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x041bc6570160: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;Shadow byte legend (one shadow byte represents 8 application bytes):
+&lt;&#x2F;span&gt;&lt;span&gt;  Addressable:           00
+&lt;&#x2F;span&gt;&lt;span&gt;  Partially addressable: 01 02 03 04 05 06 07
+&lt;&#x2F;span&gt;&lt;span&gt;  Heap left redzone:       fa
+&lt;&#x2F;span&gt;&lt;span&gt;  Freed heap region:       fd
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack left redzone:      f1
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack mid redzone:       f2
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack right redzone:     f3
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack after return:      f5
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack use after scope:   f8
+&lt;&#x2F;span&gt;&lt;span&gt;  Global redzone:          f9
+&lt;&#x2F;span&gt;&lt;span&gt;  Global init order:       f6
+&lt;&#x2F;span&gt;&lt;span&gt;  Poisoned by user:        f7
+&lt;&#x2F;span&gt;&lt;span&gt;  Container overflow:      fc
+&lt;&#x2F;span&gt;&lt;span&gt;  Array cookie:            ac
+&lt;&#x2F;span&gt;&lt;span&gt;  Intra object redzone:    bb
+&lt;&#x2F;span&gt;&lt;span&gt;  ASan internal:           fe
+&lt;&#x2F;span&gt;&lt;span&gt;  Left alloca redzone:     ca
+&lt;&#x2F;span&gt;&lt;span&gt;  Right alloca redzone:    cb
+&lt;&#x2F;span&gt;&lt;span&gt;  Shadow gap:              cc
+&lt;&#x2F;span&gt;&lt;span&gt;==20928==ABORTING
+&lt;&#x2F;span&gt;&lt;span&gt;MS: 2 InsertByte-InsertByte-; base unit: adc83b19e793491b1c6ea0fd8b46cd9f32e592fc
+&lt;&#x2F;span&gt;&lt;span&gt;0x11,0xa,0x2d,
+&lt;&#x2F;span&gt;&lt;span&gt;\x11\x0a-
+&lt;&#x2F;span&gt;&lt;span&gt;artifact_prefix=&amp;#39;.&#x2F;&amp;#39;; Test unit written to .&#x2F;crash-dac57cac066b9b5ec2f3f5f64595a40609d52e80
+&lt;&#x2F;span&gt;&lt;span&gt;Base64: EQot
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>libnyquist: heap overflow in Vorbis decoder</title>
+		<published>2019-07-30T00:00:00+00:00</published>
+		<updated>2019-07-30T00:00:00+00:00</updated>
+		<link href="https://ekse.oops.wtf/blog/libnyquist-heap-overflow/" type="text/html"/>
+		<id>https://ekse.oops.wtf/blog/libnyquist-heap-overflow/</id>
+		<content type="html">&lt;h2 id=&quot;summary&quot;&gt;Summary&lt;&#x2F;h2&gt;
+&lt;p&gt;&lt;a rel=&quot;nofollow noreferrer&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;ddiakopoulos&#x2F;libnyquist&quot;&gt;libnyquist&lt;&#x2F;a&gt; is a cross platform C++11 library for decoding audio (mp3, wav, ogg, opus, flac, etc). A heap overflow can happen in VorbisDecoderInternal::readInternal when the library attempts to read more frames than the allocated capacity of &lt;code&gt;AudioData-&amp;gt;samples&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;github issue: &lt;a rel=&quot;nofollow noreferrer&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;ddiakopoulos&#x2F;libnyquist&#x2F;issues&#x2F;40&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;ddiakopoulos&#x2F;libnyquist&#x2F;issues&#x2F;40&lt;&#x2F;a&gt;
+crash input: &lt;a rel=&quot;nofollow noreferrer&quot; href=&quot;https:&#x2F;&#x2F;drive.google.com&#x2F;open?id=10xpTDUrHzJLFknsY4bF8333YpvnMHZJc&quot;&gt;crash-7f190cd04b5fbf6f813db4447b5010e63867fe6a.ogg&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;For reference, the fuzzer can be found on my &lt;a rel=&quot;nofollow noreferrer&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;ekse&#x2F;libnyquist&#x2F;tree&#x2F;fuzzing&quot;&gt;fuzzing&lt;&#x2F;a&gt; branch. The provided sample also crashes the sample &lt;code&gt;libnyquist-examples&lt;&#x2F;code&gt; that is provided with libnyquist.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;detailed-analysis&quot;&gt;Detailed analysis&lt;&#x2F;h2&gt;
+&lt;p&gt;libnyquist can write past the capacity of &lt;code&gt;samples&lt;&#x2F;code&gt; in AudioData. With the provided crash sample, this happens when &lt;code&gt;totalFramesRead&lt;&#x2F;code&gt; reaches the value 19840.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;VorbisDecoderInternal::readInternal&lt;&#x2F;code&gt; contains the following code. The write overflow happens in &lt;code&gt;d-&amp;gt;samples[totalFramesRead] = buffer[ch][i]&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;c&quot; style=&quot;background-color:#2e3440;color:#d8dee9;&quot; class=&quot;language-c &quot;&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;int&lt;&#x2F;span&gt;&lt;span&gt; i &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;;&lt;&#x2F;span&gt;&lt;span&gt; i &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span&gt; framesRead&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;++&lt;&#x2F;span&gt;&lt;span&gt;i)
+&lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;for&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;int&lt;&#x2F;span&gt;&lt;span&gt; ch &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;;&lt;&#x2F;span&gt;&lt;span&gt; ch &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span&gt; d&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;-&amp;gt;&lt;&#x2F;span&gt;&lt;span&gt;channelCount&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;;&lt;&#x2F;span&gt;&lt;span&gt; ch&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;++&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;    {
+&lt;&#x2F;span&gt;&lt;span&gt;        d&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;-&amp;gt;&lt;&#x2F;span&gt;&lt;span&gt;samples[totalFramesRead] &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span&gt; buffer[ch][i]&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;        totalFramesRead&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;++&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The size of samples is set in VorbisDecoderInternal::loadAudioData.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;c&quot; style=&quot;background-color:#2e3440;color:#d8dee9;&quot; class=&quot;language-c &quot;&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;auto&lt;&#x2F;span&gt;&lt;span&gt; totalSamples &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbcbb;&quot;&gt;size_t&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#88c0d0;&quot;&gt;getTotalSamples&lt;&#x2F;span&gt;&lt;span&gt;())&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;d&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;-&amp;gt;&lt;&#x2F;span&gt;&lt;span&gt;samples&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#88c0d0;&quot;&gt;resize&lt;&#x2F;span&gt;&lt;span&gt;(totalSamples &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;*&lt;&#x2F;span&gt;&lt;span&gt; d&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;-&amp;gt;&lt;&#x2F;span&gt;&lt;span&gt;channelCount)&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;getTotalSamples&lt;&#x2F;code&gt; is defined as follows.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;c&quot; style=&quot;background-color:#2e3440;color:#d8dee9;&quot; class=&quot;language-c &quot;&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;inline &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbcbb;&quot;&gt;int64_t &lt;&#x2F;span&gt;&lt;span style=&quot;color:#88c0d0;&quot;&gt;getTotalSamples&lt;&#x2F;span&gt;&lt;span&gt;() &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;const &lt;&#x2F;span&gt;&lt;span&gt;{ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbcbb;&quot;&gt;int64_t&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#88c0d0;&quot;&gt;ov_pcm_total&lt;&#x2F;span&gt;&lt;span&gt;(const_cast&lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span&gt;OggVorbis_File &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;*&amp;gt;&lt;&#x2F;span&gt;&lt;span&gt;(fileHandle)&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#81a1c1;&quot;&gt;-&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span&gt;))&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eceff4;&quot;&gt;; &lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;In the crash sample, &lt;code&gt;totalSamples&lt;&#x2F;code&gt; is 9920, d-&amp;gt;channelCount is 2, so samples is set to size 19840.&lt;&#x2F;p&gt;
+&lt;p&gt;AddressSanitizer report:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2e3440;color:#d8dee9;&quot;&gt;&lt;code&gt;&lt;span&gt;==12481==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x631000027e00 at pc 0x000000822064 bp 0x7ffcb604acd0 sp 0x7ffcb604acc8
+&lt;&#x2F;span&gt;&lt;span&gt;WRITE of size 4 at 0x631000027e00 thread T0
+&lt;&#x2F;span&gt;&lt;span&gt;    #0 0x822063 in VorbisDecoderInternal::readInternal(unsigned long, unsigned long) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;VorbisDecoder.cpp:105:49
+&lt;&#x2F;span&gt;&lt;span&gt;    #1 0x820788 in VorbisDecoderInternal::loadAudioData(void*, ov_callbacks) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;VorbisDecoder.cpp:248:14
+&lt;&#x2F;span&gt;&lt;span&gt;    #2 0x81ef9a in VorbisDecoderInternal::VorbisDecoderInternal(nqr::AudioData*, std::vector&amp;lt;unsigned char, std::allocator&amp;lt;unsigned char&amp;gt; &amp;gt; const&amp;amp;) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;VorbisDecoder.cpp:56:13
+&lt;&#x2F;span&gt;&lt;span&gt;    #3 0x81ea87 in nqr::VorbisDecoder::LoadFromBuffer(nqr::AudioData*, std::vector&amp;lt;unsigned char, std::allocator&amp;lt;unsigned char&amp;gt; &amp;gt; const&amp;amp;) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;VorbisDecoder.cpp:264:27
+&lt;&#x2F;span&gt;&lt;span&gt;    #4 0x5347bc in nqr::NyquistIO::Load(nqr::AudioData*, std::__cxx11::basic_string&amp;lt;char, std::char_traits&amp;lt;char&amp;gt;, std::allocator&amp;lt;char&amp;gt; &amp;gt; const&amp;amp;, std::vector&amp;lt;unsigned char, std::allocator&amp;lt;unsigned char&amp;gt; &amp;gt; const&amp;amp;) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;Common.cpp:133:22
+&lt;&#x2F;span&gt;&lt;span&gt;    #5 0x52a6b3 in Fuzz_Decoder(unsigned char const*, unsigned long) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;fuzzers&#x2F;FuzzNyquist.cpp:20:12
+&lt;&#x2F;span&gt;&lt;span&gt;    #6 0x52ad5b in LLVMFuzzerTestOneInput &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;fuzzers&#x2F;FuzzNyquist.cpp:28:5
+&lt;&#x2F;span&gt;&lt;span&gt;    #7 0x43231a in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long) (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x43231a)
+&lt;&#x2F;span&gt;&lt;span&gt;    #8 0x424c5c in fuzzer::RunOneTest(fuzzer::Fuzzer*, char const*, unsigned long) (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x424c5c)
+&lt;&#x2F;span&gt;&lt;span&gt;    #9 0x42a0e1 in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long)) (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x42a0e1)
+&lt;&#x2F;span&gt;&lt;span&gt;    #10 0x44c702 in main (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x44c702)
+&lt;&#x2F;span&gt;&lt;span&gt;    #11 0x7fadf79f1b6a in __libc_start_main &#x2F;build&#x2F;glibc-KRRWSm&#x2F;glibc-2.29&#x2F;csu&#x2F;..&#x2F;csu&#x2F;libc-start.c:308:16
+&lt;&#x2F;span&gt;&lt;span&gt;    #12 0x423539 in _start (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x423539)
+&lt;&#x2F;span&gt;&lt;span&gt;0x631000027e00 is located 0 bytes to the right of 79360-byte region [0x631000014800,0x631000027e00)
+&lt;&#x2F;span&gt;&lt;span&gt;allocated by thread T0 here:
+&lt;&#x2F;span&gt;&lt;span&gt;    #0 0x527512 in operator new(unsigned long) (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x527512)
+&lt;&#x2F;span&gt;&lt;span&gt;    #1 0x56ae67 in __gnu_cxx::new_allocator&amp;lt;float&amp;gt;::allocate(unsigned long, void const*) &#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;8&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;include&#x2F;c++&#x2F;8&#x2F;ext&#x2F;new_allocator.h:111:27
+&lt;&#x2F;span&gt;&lt;span&gt;    #2 0x56ad6c in std::allocator_traits&amp;lt;std::allocator&amp;lt;float&amp;gt; &amp;gt;::allocate(std::allocator&amp;lt;float&amp;gt;&amp;amp;, unsigned long) &#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;8&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;include&#x2F;c++&#x2F;8&#x2F;bits&#x2F;alloc_traits.h:436:20
+&lt;&#x2F;span&gt;&lt;span&gt;    #3 0x56a409 in std::_Vector_base&amp;lt;float, std::allocator&amp;lt;float&amp;gt; &amp;gt;::_M_allocate(unsigned long) &#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;8&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;include&#x2F;c++&#x2F;8&#x2F;bits&#x2F;stl_vector.h:296:20
+&lt;&#x2F;span&gt;&lt;span&gt;    #4 0x5696b5 in std::vector&amp;lt;float, std::allocator&amp;lt;float&amp;gt; &amp;gt;::_M_default_append(unsigned long) &#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;8&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;include&#x2F;c++&#x2F;8&#x2F;bits&#x2F;vector.tcc:604:34
+&lt;&#x2F;span&gt;&lt;span&gt;    #5 0x566e8c in std::vector&amp;lt;float, std::allocator&amp;lt;float&amp;gt; &amp;gt;::resize(unsigned long) &#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;8&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;include&#x2F;c++&#x2F;8&#x2F;bits&#x2F;stl_vector.h:827:4
+&lt;&#x2F;span&gt;&lt;span&gt;    #6 0x82076f in VorbisDecoderInternal::loadAudioData(void*, ov_callbacks) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;VorbisDecoder.cpp:246:20
+&lt;&#x2F;span&gt;&lt;span&gt;    #7 0x81ef9a in VorbisDecoderInternal::VorbisDecoderInternal(nqr::AudioData*, std::vector&amp;lt;unsigned char, std::allocator&amp;lt;unsigned char&amp;gt; &amp;gt; const&amp;amp;) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;VorbisDecoder.cpp:56:13
+&lt;&#x2F;span&gt;&lt;span&gt;    #8 0x81ea87 in nqr::VorbisDecoder::LoadFromBuffer(nqr::AudioData*, std::vector&amp;lt;unsigned char, std::allocator&amp;lt;unsigned char&amp;gt; &amp;gt; const&amp;amp;) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;VorbisDecoder.cpp:264:27
+&lt;&#x2F;span&gt;&lt;span&gt;    #9 0x5347bc in nqr::NyquistIO::Load(nqr::AudioData*, std::__cxx11::basic_string&amp;lt;char, std::char_traits&amp;lt;char&amp;gt;, std::allocator&amp;lt;char&amp;gt; &amp;gt; const&amp;amp;, std::vector&amp;lt;unsigned char, std::allocator&amp;lt;unsigned char&amp;gt; &amp;gt; const&amp;amp;) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;Common.cpp:133:22
+&lt;&#x2F;span&gt;&lt;span&gt;    #10 0x52a6b3 in Fuzz_Decoder(unsigned char const*, unsigned long) &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;fuzzers&#x2F;FuzzNyquist.cpp:20:12
+&lt;&#x2F;span&gt;&lt;span&gt;    #11 0x52ad5b in LLVMFuzzerTestOneInput &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;fuzzers&#x2F;FuzzNyquist.cpp:28:5
+&lt;&#x2F;span&gt;&lt;span&gt;    #12 0x43231a in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long) (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x43231a)
+&lt;&#x2F;span&gt;&lt;span&gt;    #13 0x424c5c in fuzzer::RunOneTest(fuzzer::Fuzzer*, char const*, unsigned long) (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x424c5c)
+&lt;&#x2F;span&gt;&lt;span&gt;    #14 0x42a0e1 in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long)) (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x42a0e1)
+&lt;&#x2F;span&gt;&lt;span&gt;    #15 0x44c702 in main (&#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;fuzzers&#x2F;FuzzNyquist+0x44c702)
+&lt;&#x2F;span&gt;&lt;span&gt;    #16 0x7fadf79f1b6a in __libc_start_main &#x2F;build&#x2F;glibc-KRRWSm&#x2F;glibc-2.29&#x2F;csu&#x2F;..&#x2F;csu&#x2F;libc-start.c:308:16
+&lt;&#x2F;span&gt;&lt;span&gt;SUMMARY: AddressSanitizer: heap-buffer-overflow &#x2F;home&#x2F;ekse&#x2F;git&#x2F;libnyquist&#x2F;builds&#x2F;Fuzzing&#x2F;..&#x2F;..&#x2F;src&#x2F;VorbisDecoder.cpp:105:49 in VorbisDecoderInternal::readInternal(unsigned long, unsigned long)
+&lt;&#x2F;span&gt;&lt;span&gt;Shadow bytes around the buggy address:
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffcf70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffcf80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffcf90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffcfa0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffcfb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+&lt;&#x2F;span&gt;&lt;span&gt;=&amp;gt;0x0c627fffcfc0:[fa]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffcfd0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffcfe0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffcff0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffd000: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;  0x0c627fffd010: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+&lt;&#x2F;span&gt;&lt;span&gt;Shadow byte legend (one shadow byte represents 8 application bytes):
+&lt;&#x2F;span&gt;&lt;span&gt;  Addressable:           00
+&lt;&#x2F;span&gt;&lt;span&gt;  Partially addressable: 01 02 03 04 05 06 07
+&lt;&#x2F;span&gt;&lt;span&gt;  Heap left redzone:       fa
+&lt;&#x2F;span&gt;&lt;span&gt;  Freed heap region:       fd
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack left redzone:      f1
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack mid redzone:       f2
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack right redzone:     f3
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack after return:      f5
+&lt;&#x2F;span&gt;&lt;span&gt;  Stack use after scope:   f8
+&lt;&#x2F;span&gt;&lt;span&gt;  Global redzone:          f9
+&lt;&#x2F;span&gt;&lt;span&gt;  Global init order:       f6
+&lt;&#x2F;span&gt;&lt;span&gt;  Poisoned by user:        f7
+&lt;&#x2F;span&gt;&lt;span&gt;  Container overflow:      fc
+&lt;&#x2F;span&gt;&lt;span&gt;  Array cookie:            ac
+&lt;&#x2F;span&gt;&lt;span&gt;  Intra object redzone:    bb
+&lt;&#x2F;span&gt;&lt;span&gt;  ASan internal:           fe
+&lt;&#x2F;span&gt;&lt;span&gt;  Left alloca redzone:     ca
+&lt;&#x2F;span&gt;&lt;span&gt;  Right alloca redzone:    cb
+&lt;&#x2F;span&gt;&lt;span&gt;  Shadow gap:              cc
+&lt;&#x2F;span&gt;&lt;span&gt;==12481==ABORTING
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+</content>
+	</entry>
+</feed>
