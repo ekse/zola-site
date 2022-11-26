@@ -2,9 +2,9 @@
 #================ Docs: https://github.com/isunjn/serene/wiki ============================
 #=========================================================================================
 
-base_url = "https://ekse.oops.wtf" # The domain of your site
-title = "Security and stuff"
-description = ""
+base_url = "https://example.com" # The domain of your site
+title = "xxxx"
+description = "xxxx xxxx xxxx"
 default_language = "en"
 theme = "serene"
 output_dir = "public"
@@ -12,7 +12,7 @@ compile_sass = true              # Keep this true
 minify_html = true               # Whether to minify html code
 build_search_index = false       # Keep this false, search is temporarily unsupported
 generate_feed = false            # Whether to generate a feed file in root, read docs for more info about rss feed
-feed_filename = "feed.xml"
+feed_filename = "feed.xml"       # The file name of feed, "feed.xml" / "atom.xml" / "rss.xml", read docs for more info
 taxonomies = [
     {name = "tags"},             # Keep this
     {name = "categories"}        # Keep this
@@ -21,8 +21,7 @@ taxonomies = [
 [markdown]
 highlight_code = true
 extra_syntaxes = []          
-# The highlight theme, choose one at https://www.getzola.org/documentation/getting-started/configuration/#syntax-highlighting
-highlight_theme = "nord"         
+highlight_theme = "nord"         # The highlight theme, choose one at https://www.getzola.org/documentation/getting-started/configuration/#syntax-highlighting
 render_emoji = true
 external_links_target_blank = false
 external_links_no_follow = true
@@ -36,13 +35,13 @@ anchors = "on"
 
 #=========================================================================================
 [extra]
-name = "Sébastien Duquette"
-id = "ekse"
-bio = "I write about stuff. sometimes."
-avatar = "/assets/avatar.png"
+name = "xxxx"                    # Your name
+id = "xxxx"                      # Your id/username/handle
+bio = "xxxx"                     # Your bio
+avatar = "img/avatar.webp"       # Your avatar
 
 show_id = true                   # Whether to show your id in homepage
-show_projects = false             # Whether to show projects page
+show_projects = true             # Whether to show projects page
 
 #============== Icons, you can choose at https://remixicon.com/ ====
 blog_icon = "ri-quill-pen-line"          
@@ -53,8 +52,10 @@ toc_icon = "ri-menu-2-line"
 
 #============== Social media links =================================
 links = [
-    {name = "GitHub", icon = "ri-github-line", url = "https://github.com/ekse"},
-    {name = "Mastodon", icon = "ri-mastodon-line", url = "https://noc.social/@ekse"}
+    {name = "GitHub", icon = "ri-github-line", url = "https://github.com/<your-username>"},
+    {name = "Twitter", icon = "ri-twitter-line", url = "https://twitter.com/<your-username>"},
+    {name = "Email", icon = "ri-mail-line", url = "mailto:<your-email-address>"}
+    # Your can add more links
 ]
 
 #============== Feed ===============================================
@@ -73,12 +74,57 @@ outdate_warn_text_before = "Note: This article was last updated "
 outdate_warn_text_after = " days ago and may be out of date."
 
 #============== Footer =============================================
-footer_copyright_name = "Sébastien Duquette"
+footer_copyright_name = "<your-name>"
 footer_copyright_year = "2022"
-footer_custom = ""
+# footer_custom = "xxxxxxxx"
 footer_credits = true            # Whether to show "Powered by Zola and Serene" in footer
 
 #============== Comment and Web analytics config ====================
 comment = "none"                 # gitalk / disqus / disqus_js
 analytics = "none"               # google_analytics / cloudflare_web_analytics / umami / baidu_tongji
 
+
+#======================= Comment =======================
+
+[extra.gitalk]
+client_id = "xxxxxxxx"
+client_secret = "xxxxxxxx"
+repo = "xxxxxxxx"
+owner = "xxxx"
+admin = ["xxxx"]
+distraction_free_mode = false
+per_page = 10
+page_direction = "first"
+proxy = "https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"
+
+[extra.disqus]
+shortname = "xxxx"
+
+[extra.disqus_js]
+shortname = "xxxx"
+apikey = "xxxx"
+# site_name = "xxxx"
+# identifier = "xxxx"
+# url = "xxxx"
+# title = "xxxx"
+# api = "xxxx"
+# nesting = 4
+# nocomment = "xxxx"
+# admin = "xxxx"
+# admin_label = "xxxx"
+
+
+#======================= Analytics =====================
+
+[extra.google_analytics]
+id = "G-XXXXXXXX"  # or UA-XXXXXXXX
+
+[extra.cloudflare_web_analytics]
+token = "xxxxxxxx"
+
+[extra.umami]
+website_id = "xxxxx-xxxx-xxxxx"
+src = "https://xxxxxxxxxxx/umami.js"
+
+[extra.baidu_tongji]
+token = "xxxxxxxx"
