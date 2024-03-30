@@ -2,7 +2,7 @@
 #================ Docs: https://github.com/isunjn/serene/wiki ============================
 #=========================================================================================
 
-base_url = "https://ekse.oops.wtf" # The domain of your site
+base_url = "https://ekse.pages.dev" # The domain of your site
 title = "Security and stuff"
 description = ""
 default_language = "en"
