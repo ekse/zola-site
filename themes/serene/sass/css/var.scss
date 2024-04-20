@@ -1,6 +1,6 @@
 :root {
 //======================  Colors  ========================
---primary-color: #6d9bff;
+--primary-color: #c6864d;
 
 // light-mode colors
 --primary-light-color: #6d9bff20;
@@ -12,10 +12,10 @@
  
 // dark-mode colors
 --dark-primary-light-color: #6d9bff20;
---dark-text-primary-color: #9197a5;
+--dark-text-primary-color: #b5b9c4;
 --dark-text-second-color: #70788b;
 --dark-text-light-color: #5d6470;
---dark-bg-color: black;
+--dark-bg-color: #021520;
 --dark-blur-bg-color: #2b2b2b30;
 
 // colors for admonitions (specially styled quote block)
@@ -58,7 +58,7 @@
 --paragraph-line-height: 1.75;
 --img-border-radius: 4px;
 --pre-border-radius: 4px;
---main-font: 'Jost', Arial, Helvetica, sans-serif;
+--main-font: 'Nunito', Arial, Helvetica, sans-serif;
 --code-font: 'JetBrains Mono', monospace;
 
 }
