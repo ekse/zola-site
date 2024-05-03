@@ -28,11 +28,11 @@ Now, deploying a Zola site works but I had to use an 😒ugly hack😒. If I was
 
 My workaround is to store a precompiled build of zola in my repo and modify the build command to make it executable and call it manually. It works for the time being but I wouldn't be surprised if it breaks in the future.
 
-![](/assets/blog-setup/cloudflare2.png)
+![](/assets/blog_setup/cloudflare2.png)
 
 The site is setup such that every time I push to the `main` branch it deploys the site. I can also do preview deployment by pushing to branches that begin with `preview-`. Cloudflare generates links like `ea49e660.ekse.pages.dev` that I can use to preview the content.
 
-![](/assets/blog-setup/cloudflare1.png)
+![](/assets/blog_setup/cloudflare1.png)
 
 Other than the deployment bullshittery my experience has been quite pleasant so far, the site takes less than a minute to deploy. I found the management panel a bit confusing at first but I like it now that got used to where things are.
 
@@ -40,7 +40,7 @@ Other than the deployment bullshittery my experience has been quite pleasant so 
 
 [Umami](https://umami.is/) is a privacy preserving analytics service. You get page views by path and referrers which is frankly all I really care about. You can also see what browsers, platform (desktop or mobile) and countries visits are coming from which is nice to see. The interface is clean and very simple to use. The free tier includes 10K monthly events which is again more than enough for my needs.
 
-![](/assets/blog-setup/umami.png)
+![](/assets/blog_setup/umami.jpg)
 
 Adding it was quite straightforward as the Serene theme supports it. I created my instance, enabled in config.toml, set my website_id and url in theme.toml and that was it.
 
