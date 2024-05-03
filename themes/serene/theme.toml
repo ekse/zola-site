@@ -97,8 +97,5 @@ id = "G-XXXXXXXX"  # or UA-XXXXXXXX
 token = "xxxxxxxx"
 
 [extra.umami]
-website_id = "xxxxx-xxxx-xxxxx"
-src = "https://xxxxxxxxxxx/umami.js"
-
-[extra.baidu_tongji]
-token = "xxxxxxxx"
+website_id = "8a6655dc-02d7-4510-befc-e854f7da87a6"
+src = "https://analytics.us.umami.is/script.js"

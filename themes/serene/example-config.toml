@@ -125,6 +125,3 @@ token = "xxxxxxxx"
 [extra.umami]
 website_id = "xxxxx-xxxx-xxxxx"
 src = "https://xxxxxxxxxxx/umami.js"
-
-[extra.baidu_tongji]
-token = "xxxxxxxx"
