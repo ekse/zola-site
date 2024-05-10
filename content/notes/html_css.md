@@ -24,6 +24,8 @@ An element can have multiple classes, they are separated by a space.
 <p class="class1 class2"></p>
 ```
 
+## HTML Elements
+
 ### The input element
 
 The `<input>` tag has a `password` type for sensitive data.
@@ -39,6 +41,15 @@ Also, `type="date"` and `type="time"` display a button to select the date or tim
 ```html
 <input type="text" placeholder="Enter username">
 ```
+
+### div and span elements
+
+div and span can be used to apply CSS to content. div is block based, span is flex based.
+
+### lists
+
+The item marker of a list can be set with `list-style-image`, BUT, 
+the image cannot be aligned vertically which doesn't look good.
 
 # CSS
 
@@ -61,16 +72,27 @@ body {
 
 Use divs to structure the page content and apply styling to them instead of directly to the elements, this is more future proof if the content changes in the future.
 
-### selecting a class
+### targeting in css
 
-Classes are selected with a dot.
+Elements are targeted by writing their name, classes are selected with a dot (.class), ids with a # (#id).
 
 ```css
+/* targetting the main class*/
 .main {
    margin-top: 20px;
 }
 ```
 
+### pseudo-classes
+
+Elements can be targeted in specific conditions, for example the
+code below changes the text color when the cursor is over a link.
+
+```css
+a:hover {
+    color: black;
+}
+```
 
 ## margins, padding and borders; the Box Model
 
@@ -84,18 +106,30 @@ In CSS, margins, padding and borders are part of a concept called the [Box Model
 
 Source: [https://elementor.com/blog/margin-vs-padding](https://elementor.com/blog/margin-vs-padding)
 
+**shorthand notation**
 
+```css
+/* all sides equal */
+margin: 10px
+/* top right bottom left */
+margin: 10px 20px 5px 8px
+/* top/bottom left/right */
+margin: 10px 20px
+```
 
 ### display: inline, block, flex (Flexbox)
 
 `inline` puts the elements on the same line as others if there is enough space. with `block` the element takes all the horizontal space and other elements are pushed below.
 
-`flex` is used for Flexbox. [Flexbox](https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Flexbox) is described my MDN as *"a one-dimensional layout method for arranging items in rows or columns"*.
+`flex` is used for Flexbox. [Flexbox](https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Flexbox) is described my MDN as *"a one-dimensional layout method for arranging items in rows or columns"*. Flex only changes the layout of direct child elements but not their content.
 
 ```css
 .section {
     display: flex;
     justify-content: center;
+    align-items: center;
+    /* the default orientation of flexbox is row */
+    flex-direction: column;
 }
 ```
 
@@ -120,5 +154,71 @@ border: 4px solid #222222;
 border-radius: 20px;
 ```
 
+### text shadow
+
+```css
+/*  negative values for left and top  */
+/* left-right top-down color */
+text-shadow: 5px 5px black;
+/* left-right top-down blur color */
+text-shadow: 5px 5px 5px black;
+```
+
+Text can be highlighted using a blur only shadow. This is useful to
+make text more readable when the text color blends too much with the
+background.
+
+```css
+text-shadow: 0px 0px 4px black;
+```
+
+### trick: make gradient color text
+
+```css
+background-image: linear-gradient(to right,red,orange,black);
+background-clip: text;
+-webkit-text-fill-color: transparent;
+```
+
+# Design fundamentals
+
+Understanding Design Fundamentals, Scrimba (45mins) [https://scrimba.com/learn/design](https://scrimba.com/learn/design)
+
+1. Use whitespace
+2. Align elements
+3. Contrast
+4. Typography
+5. Color
+
+### Whitespace
+
+Use whitespace (also called negative space) to make content less crammed more aestically pleasing. Increasing the line height makes the text easier to read.
+
+```css
+p {
+    line-height: 1.5em;
+}
+```
+
+### Contrast
+
+The WCAG contrast guidlelines recommends a contrast ratio of 3:1 for large text and 4.5:1 for text and images.
+
+[https://contrastchecker.com/](https://contrastchecker.com/)
+
+
+### Typography
+
+- Use no more than 1 or 2 fonts.
+- Establish the importance of elements with visual hierarchy.
+
+### Color
+
+- Don't use too many colors.
+- Use colors that contrast well together.
+- Use slight variations of the same color.
+
+
+https://coolors.co is useful to generate color palettes.
 
 
