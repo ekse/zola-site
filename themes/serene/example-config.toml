@@ -80,22 +80,11 @@ footer_copyright_year = "2022"
 footer_credits = true            # Whether to show "Powered by Zola and Serene" in footer
 
 #============== Comment and Web analytics config ====================
-comment = "none"                 # gitalk / disqus / disqus_js
+comment = "none"                 # disqus / disqus_js
 analytics = "none"               # google_analytics / cloudflare_web_analytics / umami / baidu_tongji
 
 
 #======================= Comment =======================
-
-[extra.gitalk]
-client_id = "xxxxxxxx"
-client_secret = "xxxxxxxx"
-repo = "xxxxxxxx"
-owner = "xxxx"
-admin = ["xxxx"]
-distraction_free_mode = false
-per_page = 10
-page_direction = "first"
-proxy = "https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"
 
 [extra.disqus]
 shortname = "xxxx"

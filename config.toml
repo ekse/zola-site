@@ -80,5 +80,5 @@ footer_custom = ""
 footer_credits = true            # Whether to show "Powered by Zola and Serene" in footer
 
 #============== Comment and Web analytics config ====================
-comment = "none"                 # gitalk / disqus / disqus_js
+comment = "none"                 # disqus / disqus_js
 analytics = "umami"               # google_analytics / cloudflare_web_analytics / umami

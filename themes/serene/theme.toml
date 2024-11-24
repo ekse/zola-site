@@ -61,17 +61,6 @@ analytics = "none"
 
 #=========================================================================================
 
-[extra.gitalk]
-client_id = "xxxxxxxx"
-client_secret = "xxxxxxxx"
-repo = "xxxxxxxx"
-owner = "xxxx"
-admin = ["xxxx"]
-distraction_free_mode = false
-per_page = 10
-page_direction = "first"
-proxy = "https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"
-
 [extra.disqus]
 shortname = "xxxx"
 
