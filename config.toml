@@ -54,7 +54,8 @@ toc_icon = "ri-menu-2-line"
 #============== Social media links =================================
 links = [
     {name = "GitHub", icon = "ri-github-line", url = "https://github.com/ekse"},
-    {name = "Mastodon", icon = "ri-mastodon-line", url = "https://noc.social/@ekse"}
+    {name = "Mastodon", icon = "ri-mastodon-line", url = "https://noc.social/@ekse"},
+    {name = "Bluesky", icon = "ri-bluesky-line", url = "https://bsky.app/profile/sduquette.bsky.social"}
 ]
 
 #============== Feed ===============================================
