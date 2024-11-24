@@ -51,6 +51,12 @@ div and span can be used to apply CSS to content. div is block based, span is fl
 The item marker of a list can be set with `list-style-image`, BUT, 
 the image cannot be aligned vertically which doesn't look good.
 
+### template
+
+The `template` tag can be used to define snippets of html to be reused.
+
+[https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_templates_and_slots](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_templates_and_slots)
+
 # CSS
 
 Defining a style sheet
