@@ -87,4 +87,4 @@ token = "xxxxxxxx"
 
 [extra.umami]
 website_id = "8a6655dc-02d7-4510-befc-e854f7da87a6"
-src = "https://analytics.us.umami.is/script.js"
+src = "https://cloud.umami.is/script.js"
