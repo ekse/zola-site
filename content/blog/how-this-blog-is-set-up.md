@@ -22,19 +22,13 @@ The Zola website provides a good selection of [themes](https://www.getzola.org/t
 
 ### Cloudflare Pages
 
-For the hosting I'm using [Cloudflare Pages](https://pages.cloudflare.com/). When you create a site, you connect it to a git repository (github or gitlab), specify the framework to use and that's pretty much it. You get a `pages.dev` domain for your site, you can also define a custom domain. The free plan offers unlimited requests and bandwidth, and 500 builds per month which is plenty for my needs.
+For the hosting I'm using [Cloudflare Pages](https://pages.cloudflare.com/). When you create a site, you connect it to a git repository (github or gitlab), specify the framework to use and that's pretty much it. You get a `pages.dev` domain for your site, you can also define a custom domain. The free plan offers unlimited requests and bandwidth, and 500 builds per month which is plenty for my needs. Cloudflare Pages now supports Zola out of the box.
 
-Now, deploying a Zola site works but I had to use an 😒ugly hack😒. If I was starting from scratch today I would look at deploying it on another provider like [Github Pages](https://www.getzola.org/documentation/deployment/github-pages/), [Netlify](https://www.getzola.org/documentation/deployment/netlify/) or [Vercel](https://www.getzola.org/documentation/deployment/vercel/). According to Cloudflare's documentation Zola is [supposed to be supported](https://developers.cloudflare.com/pages/framework-guides/deploy-a-zola-site/) but it complains that the `zola` command does not exist when building. My understanding is that they broke it with version 2 of Cloudflare Pages (there is an open [github issue](https://github.com/cloudflare/pages-build-image/issues/3)). 
-
-My workaround is to store a precompiled build of zola in my repo and modify the build command to make it executable and call it manually. It works for the time being but I wouldn't be surprised if it breaks in the future.
-
-![](/assets/blog_setup/cloudflare2.png)
-
-The site is setup such that every time I push to the `main` branch it deploys the site. I can also do preview deployment by pushing to branches that begin with `preview-`. Cloudflare generates links like `ea49e660.ekse.pages.dev` that I can use to preview the content.
+Every time I push to the `main` branch it deploys the site. Cloudflare generates preview links like `ea49e660.ekse.pages.dev` when pushing to  branches that begin with 'preview-'.
 
 ![](/assets/blog_setup/cloudflare1.png)
 
-Other than the deployment bullshittery my experience has been quite pleasant so far, the site takes less than a minute to deploy. I found the management panel a bit confusing at first but I like it now that got used to where things are.
+My experience has been quite pleasant so far, the site takes less than a minute to deploy. I found the management panel a bit confusing at first but I like it now that got used to where things are.
 
 ### Umami
 
@@ -85,4 +79,4 @@ This setup worked well but its not as convenient as a *push and deploy* system l
 
 ### Cloudflare Web Analytics
 
-I gave [Cloudflare Web Analytics](https://www.cloudflare.com/en-ca/web-analytics/) a try, it is built as a privacy-preserving alternative to Google Analytics. However to achieve its privacy guarantees, Cloudflare bundles visit data together, for sites like mine that get rare visits the data wasn't really useful, I would see that my site had a number of visits in the past week but didn't which pages were visited. 
+I gave [Cloudflare Web Analytics](https://www.cloudflare.com/en-ca/web-analytics/) a try, it is built as a privacy-preserving alternative to Google Analytics. However to achieve its privacy guarantees, Cloudflare bundles visit data together, for sites like mine that get rare visits the data wasn't really useful, I would see that my site had a number of visits in the past week but couldn't see which pages were visited. 
